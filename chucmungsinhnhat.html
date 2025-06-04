@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chúc Mừng Sinh Nhật!</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .container {
+      text-align: center;
+      color: #fff;
+      z-index: 1;
+    }
+    h1 {
+      font-size: 3.5em;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 1s ease-in;
+    }
+    p {
+      font-size: 1.5em;
+      margin: 20px 0;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    .balloons {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .balloon {
+      position: absolute;
+      width: 60px;
+      height: 80px;
+      background: radial-gradient(circle, #ff9f43, #ee5253);
+      border-radius: 50%;
+      animation: float 6s infinite ease-in-out;
+      opacity: 0.8;
+    }
+    .balloon::before {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      width: 2px;
+      height: 20px;
+      background: #fff;
+      transform: translateX(-50%);
+    }
+    @keyframes float {
+      0% { transform: translateY(100vh); }
+      100% { transform: translateY(-100vh); }
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    .balloon:nth-child(2) { left: 20%; animation-delay: 1s; background: radial-gradient(circle, #54a0ff, #00d2d3); }
+    .balloon:nth-child(3) { left: 40%; animation-delay: 2s; background: radial-gradient(circle, #ff6b81, #ff9f43); }
+    .balloon:nth-child(4) { left: 60%; animation-delay: 0.5s; background: radial-gradient(circle, #1dd1a1, #54a0ff); }
+    .balloon:nth-child(5) { left: 80%; animation-delay: 3s; background: radial-gradient(circle, #feca57, #ff6b6b); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Chúc Mừng Sinh Nhật!</h1>
+    <p>Chúc bạn một ngày sinh nhật thật vui vẻ, tràn đầy hạnh phúc và những điều tuyệt vời nhất!</p>
+    <p>Bạn thân tôi Nguyễn Duy Thành</p>
+  </div>
+  <div class="balloons">
+    <div class="balloon" style="left: 10%;"></div>
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+    <div class="balloon"></div>
+  </div>
+  <audio id="birthdayMusic" autoplay loop>
+    <source src="https://www.youtube.com/watch?v=Pnt1NOx2ynQ" type="audio/mpeg">
+    Trình duyệt của bạn không hỗ trợ phát âm thanh.
+  </audio>
+  <script>
+    // Tùy chỉnh bong bóng
+    const balloons = document.querySelectorAll('.balloon');
+    const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#54a0ff'];
+    balloons.forEach(balloon => {
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      balloon.style.background = `radial-gradient(circle, ${randomColor}, ${colors[Math.floor(Math.random() * colors.length)]})`;
+      balloon.style.left = `${Math.random() * 90 + 5}%`;
+      balloon.style.animationDuration = `${Math.random() * 4 + 4}s`;
+    });
+
+    // Điều khiển âm thanh
+    const audio = document.getElementById('birthdayMusic');
+    audio.volume = 0.5; // Âm lượng 50%
+    audio.play().catch(error => {
+      console.log("Âm thanh không phát tự động do chính sách trình duyệt:", error);
+      // Tùy chọn: Thêm nút để người dùng bật âm thanh
+      const button = document.createElement('button');
+      button.textContent = 'Bật Nhạc Sinh Nhật';
+      button.style.padding = '10px 20px';
+      button.style.fontSize = '1.2em';
+      button.style.background = '#ff6b6b';
+      button.style.color = '#fff';
+      button.style.border = 'none';
+      button.style.borderRadius = '5px';
+      button.style.cursor = 'pointer';
+      button.style.margin = '10px';
+      button.onclick = () => audio.play();
+      document.querySelector('.container').appendChild(button);
+    });
+  </script>
+</body>
+</html>
