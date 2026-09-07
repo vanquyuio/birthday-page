@@ -1,7 +1,7 @@
-// Điền thông tin dự án Supabase của bạn tại đây.
-// Chỉ dùng Project URL và Publishable Key (hoặc legacy anon key).
-// TUYỆT ĐỐI không đưa secret key hoặc service_role key vào file này.
+// Cấu hình Supabase cho Kho Giấy Tờ Thông Minh.
+// Publishable Key được phép xuất hiện trong frontend khi RLS đã được cấu hình đúng.
+// TUYỆT ĐỐI không đưa secret key hoặc service_role key vào đây.
 window.SUPABASE_CONFIG = {
-  url: 'YOUR_SUPABASE_PROJECT_URL',
-  publishableKey: 'YOUR_SUPABASE_PUBLISHABLE_KEY'
+  url: 'https://jxbbagauryqhwhyidzjn.supabase.co',
+  publishableKey: 'sb_publishable_0LRGbwzijO9_tH3Ur5B2cw_q0IMCN3L'
 };
