@@ -1,11 +1,11 @@
--- Kho Giấy Tờ Thông Minh - Supabase schema
--- Chạy toàn bộ file này trong Supabase SQL Editor.
+-- Kho Giấy Tờ Thông Minh - chế độ công khai
+-- Có thể chạy lại nhiều lần để chuyển từ phiên bản có đăng nhập sang không cần đăng nhập.
 
 create extension if not exists pgcrypto;
 
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete set null,
   title text not null,
   ocr_text text default '',
   image_path text not null,
@@ -15,53 +15,63 @@ create table if not exists public.documents (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists documents_user_created_idx on public.documents(user_id, created_at desc);
+-- Phiên bản mới không yêu cầu tài khoản.
+alter table public.documents alter column user_id drop not null;
+create index if not exists documents_created_idx on public.documents(created_at desc);
 create index if not exists documents_title_idx on public.documents(title);
-
 alter table public.documents enable row level security;
 
-revoke all on table public.documents from anon;
-grant select, insert, update, delete on table public.documents to authenticated;
+-- Xóa policy cũ của phiên bản có đăng nhập.
+drop policy if exists "Users can view own documents" on public.documents;
+drop policy if exists "Users can insert own documents" on public.documents;
+drop policy if exists "Users can update own documents" on public.documents;
+drop policy if exists "Users can delete own documents" on public.documents;
 
-create policy "Users can view own documents"
-on public.documents for select to authenticated
-using (auth.uid() = user_id);
+-- Cho phép mọi người xem, thêm, sửa và xóa giấy tờ.
+drop policy if exists "Public can view documents" on public.documents;
+drop policy if exists "Public can insert documents" on public.documents;
+drop policy if exists "Public can update documents" on public.documents;
+drop policy if exists "Public can delete documents" on public.documents;
 
-create policy "Users can insert own documents"
-on public.documents for insert to authenticated
-with check (auth.uid() = user_id);
+create policy "Public can view documents"
+on public.documents for select to anon, authenticated
+using (true);
 
-create policy "Users can update own documents"
-on public.documents for update to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+create policy "Public can insert documents"
+on public.documents for insert to anon, authenticated
+with check (true);
 
-create policy "Users can delete own documents"
-on public.documents for delete to authenticated
-using (auth.uid() = user_id);
+create policy "Public can update documents"
+on public.documents for update to anon, authenticated
+using (true) with check (true);
 
--- Bucket ảnh giấy tờ: PRIVATE, không công khai.
+create policy "Public can delete documents"
+on public.documents for delete to anon, authenticated
+using (true);
+
+grant select, insert, update, delete on table public.documents to anon, authenticated;
+
+-- Storage bucket giữ private nhưng policy cho phép website tạo signed URL.
 insert into storage.buckets (id, name, public)
 values ('documents', 'documents', false)
 on conflict (id) do update set public = false;
 
-create policy "Users can read own document files"
-on storage.objects for select to authenticated
-using (
-  bucket_id = 'documents'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
+-- Xóa policy cũ của Storage.
+drop policy if exists "Users can read own document files" on storage.objects;
+drop policy if exists "Users can upload own document files" on storage.objects;
+drop policy if exists "Users can delete own document files" on storage.objects;
+drop policy if exists "Public can read document files" on storage.objects;
+drop policy if exists "Public can upload document files" on storage.objects;
+drop policy if exists "Public can delete document files" on storage.objects;
 
-create policy "Users can upload own document files"
-on storage.objects for insert to authenticated
-with check (
-  bucket_id = 'documents'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
+create policy "Public can read document files"
+on storage.objects for select to anon, authenticated
+using (bucket_id = 'documents');
 
-create policy "Users can delete own document files"
-on storage.objects for delete to authenticated
-using (
-  bucket_id = 'documents'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
+create policy "Public can upload document files"
+on storage.objects for insert to anon, authenticated
+with check (bucket_id = 'documents');
+
+create policy "Public can delete document files"
+on storage.objects for delete to anon, authenticated
+using (bucket_id = 'documents');
