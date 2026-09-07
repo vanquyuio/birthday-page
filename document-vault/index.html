@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kho Giấy Tờ Thông Minh</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,Arial,sans-serif;background:#f4f7fb;color:#172033}
+    header{background:linear-gradient(135deg,#155eef,#6d28d9);color:#fff;padding:32px 18px;text-align:center}
+    header h1{margin:0;font-size:clamp(24px,4vw,38px)} header p{opacity:.9;margin:10px 0 0}
+    main{max-width:1100px;margin:28px auto;padding:0 16px}.panel{background:#fff;border-radius:18px;padding:22px;box-shadow:0 8px 28px rgba(15,23,42,.08);margin-bottom:20px}
+    h2{margin-top:0}.drop{border:2px dashed #9bb4ef;border-radius:14px;padding:30px;text-align:center;background:#f8faff}.drop input{display:none}
+    .btn{border:0;border-radius:10px;padding:12px 18px;background:#155eef;color:#fff;font-weight:700;cursor:pointer;margin:5px}.btn.secondary{background:#e8eefc;color:#1748bd}.btn.danger{background:#fee2e2;color:#b91c1c}
+    #preview{max-width:100%;max-height:340px;margin:18px auto;display:none;border-radius:12px}.status{padding:12px;border-radius:10px;background:#eef4ff;margin-top:14px;display:none}.search{display:flex;gap:10px}.search input{flex:1;padding:14px;border:1px solid #d7deeb;border-radius:10px;font-size:16px}
+    .results{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}.card{border:1px solid #e5e9f2;border-radius:14px;overflow:hidden;background:#fff}.card img{width:100%;height:170px;object-fit:cover;background:#eef2f7}.card .content{padding:14px}.card h3{margin:0 0 8px;font-size:17px}.snippet{font-size:13px;color:#5d6678;white-space:pre-wrap;max-height:90px;overflow:hidden}.meta{font-size:12px;color:#7b8495;margin-top:10px}.empty{text-align:center;color:#6b7280;padding:30px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.tag{font-size:12px;background:#eef2ff;color:#4338ca;padding:4px 8px;border-radius:99px}
+    @media(max-width:600px){.search{flex-direction:column}.panel{padding:16px}}
+  </style>
+</head>
+<body>
+<header><h1>📄 Kho Giấy Tờ Thông Minh</h1><p>Chụp hoặc tải ảnh giấy tờ → nhận diện chữ → tìm lại bằng từ khóa</p></header>
+<main>
+  <section class="panel">
+    <h2>1. Thêm giấy tờ</h2>
+    <div class="drop" id="dropZone">
+      <p><b>Chụp ảnh hoặc chọn ảnh giấy tờ</b></p>
+      <label class="btn" for="cameraInput">📷 Chụp ảnh</label>
+      <label class="btn secondary" for="fileInput">🖼️ Chọn ảnh</label>
+      <input id="cameraInput" type="file" accept="image/*" capture="environment">
+      <input id="fileInput" type="file" accept="image/*">
+    </div>
+    <img id="preview" alt="Xem trước giấy tờ">
+    <div id="status" class="status"></div>
+    <div id="saveArea" style="display:none;text-align:center;margin-top:12px"><button id="saveBtn" class="btn">💾 Lưu giấy tờ</button></div>
+  </section>
+  <section class="panel">
+    <div class="row"><h2>2. Tìm kiếm</h2><span class="tag" id="count">0 giấy tờ</span></div>
+    <div class="search"><input id="searchInput" placeholder="Ví dụ: hợp đồng, Nguyễn Văn A, số hóa đơn..." autocomplete="off"><button class="btn" id="searchBtn">🔎 Tìm kiếm</button></div>
+  </section>
+  <section class="panel"><div id="results" class="results"></div></section>
+</main>
+<script>
+const DB_KEY='document_vault_v1'; let currentFile=null,currentText='';
+const $=id=>document.getElementById(id); const status=$('status');
+function docs(){try{return JSON.parse(localStorage.getItem(DB_KEY)||'[]')}catch{return[]}}
+function setDocs(x){localStorage.setItem(DB_KEY,JSON.stringify(x))}
+function showStatus(msg){status.style.display='block';status.textContent=msg}
+function handleFile(file){if(!file)return;currentFile=file;currentText='';$('preview').src=URL.createObjectURL(file);$('preview').style.display='block';$('saveArea').style.display='none';showStatus('⏳ Đang nhận diện văn bản...');
+ Tesseract.recognize(file,'vie+eng',{logger:m=>{if(m.status==='recognizing text')showStatus('⏳ Đang nhận diện: '+Math.round(m.progress*100)+'%')}}).then(({data:{text}})=>{currentText=text.trim();showStatus(currentText?'✅ Đã nhận diện xong. Bạn có thể lưu giấy tờ.':'⚠️ Không nhận diện được nhiều chữ. Bạn vẫn có thể thử ảnh khác rõ hơn.');$('saveArea').style.display='block'}).catch(e=>showStatus('❌ Lỗi OCR: '+e.message));}
+$('cameraInput').onchange=e=>handleFile(e.target.files[0]);$('fileInput').onchange=e=>handleFile(e.target.files[0]);
+$('dropZone').ondragover=e=>{e.preventDefault()};$('dropZone').ondrop=e=>{e.preventDefault();handleFile(e.dataTransfer.files[0])};
+$('saveBtn').onclick=()=>{if(!currentFile)return;const r=new FileReader();r.onload=()=>{const title=prompt('Đặt tên cho giấy tờ:',currentFile.name.replace(/\.[^.]+$/,''))||currentFile.name;const d=docs();d.unshift({id:Date.now(),title,text:currentText,image:r.result,date:new Date().toLocaleString('vi-VN')});try{setDocs(d);currentFile=null;currentText='';$('preview').style.display='none';$('saveArea').style.display='none';showStatus('✅ Đã lưu thành công vào trình duyệt này.');render()}catch(e){alert('Bộ nhớ trình duyệt đã đầy. Hãy xóa bớt giấy tờ cũ.')}};r.readAsDataURL(currentFile)};
+function escapeHtml(s){return String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]))}
+function render(){const q=$('searchInput').value.trim().toLowerCase();const all=docs();const list=all.filter(d=>!q||d.title.toLowerCase().includes(q)||d.text.toLowerCase().includes(q));$('count').textContent=all.length+' giấy tờ';$('results').innerHTML=list.length?list.map(d=>`<article class="card"><img src="${d.image}" alt="${escapeHtml(d.title)}"><div class="content"><h3>${escapeHtml(d.title)}</h3><div class="snippet">${escapeHtml(d.text||'Chưa có nội dung OCR')}</div><div class="meta">Lưu lúc: ${d.date}</div><button class="btn secondary" onclick="viewDoc(${d.id})">Xem nội dung</button><button class="btn danger" onclick="deleteDoc(${d.id})">Xóa</button></div></article>`).join(''):'<div class="empty">Chưa tìm thấy giấy tờ phù hợp.</div>'}
+window.viewDoc=id=>{const d=docs().find(x=>x.id===id);if(d)alert('Tên giấy tờ: '+d.title+'\n\nNội dung nhận diện:\n'+(d.text||'Chưa có nội dung OCR'))};
+window.deleteDoc=id=>{if(confirm('Xóa giấy tờ này?')){setDocs(docs().filter(d=>d.id!==id));render()}};
+$('searchInput').oninput=render;$('searchBtn').onclick=render;render();
+</script>
+</body>
+</html>
